@@ -1,6 +1,5 @@
 package com.example.scam_warming_app.presentation.home
 
-import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,9 +48,8 @@ fun HomeScreen(
     val dbCount by viewModel.blacklistCount.collectAsState()
     val isAiReady by viewModel.isAiReady.collectAsState()
     val downloadStatus by viewModel.downloadStatus.collectAsState()
-    val showDownloadDialog by viewModel.showDownloadDialog.collectAsState()
 
-    // Launcher để chọn file thủ công
+    // Launcher để chọn file thủ công (Dự phòng trường hợp tải tự động thất bại)
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -60,25 +58,6 @@ fun HomeScreen(
                 viewModel.installManualModel(inputStream)
             }
         }
-    }
-
-    if (showDownloadDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDownloadDialog() },
-            title = { Text("Kích hoạt AI nâng cao") },
-            text = { Text("Ứng dụng cần tải thêm dữ liệu AI (1.3GB). Bạn có thể tải tự động hoặc chọn file .bin đã tải thủ công từ máy tính/Kaggle.") },
-            confirmButton = {
-                Button(onClick = { viewModel.startModelDownload() }) {
-                    Text("Tải tự động")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { filePickerLauncher.launch("*/*") }) {
-                    Text("Chọn file thủ công")
-                }
-            },
-            shape = RoundedCornerShape(24.dp)
-        )
     }
 
     Scaffold(
@@ -191,20 +170,20 @@ fun AiStatusCard(
                                     progress = { progress },
                                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                                 )
-                                Text("Đang tải/nạp: ${status.progress}%", fontSize = 11.sp, color = Color.Gray)
+                                Text("Đang tải/nạp AI: ${status.progress}%", fontSize = 11.sp, color = Color.Gray)
                             } else {
                                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
-                                Text("Đang chờ mạng...", fontSize = 11.sp, color = Color.Gray)
+                                Text("Đang kết nối GitHub/Google...", fontSize = 11.sp, color = Color.Gray)
                             }
                         }
                         is DownloadStatus.Error -> Text(status.message, fontSize = 11.sp, color = Color.Red)
-                        else -> Text("Hãy tải hoặc chọn file AI (.bin).", fontSize = 11.sp, color = Color.Gray)
+                        else -> Text("Đang khởi động tiến trình tải...", fontSize = 11.sp, color = Color.Gray)
                     }
                 }
             }
             if (!isReady && status !is DownloadStatus.Downloading) {
                 Column {
-                    TextButton(onClick = onDownloadClick) { Text("TẢI VỀ", fontSize = 10.sp) }
+                    TextButton(onClick = onDownloadClick) { Text("THỬ LẠI", fontSize = 10.sp) }
                     TextButton(onClick = onPickFileClick) { Text("CHỌN FILE", fontSize = 10.sp) }
                 }
             }

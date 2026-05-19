@@ -19,16 +19,16 @@ class ModelDownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gemmaAiEngine: GemmaAiEngine
 ) {
-    // DANH SÁCH LINK TẢI TRỰC TIẾP (Hãy thay bằng link GitHub Release của bạn để ổn định 100%)
+    // SỬ DỤNG LINK GITHUB RELEASE CỦA BẠN (ỔN ĐỊNH 100%)
     private val MODEL_URLS = listOf(
+        "https://github.com/khuongdao2k4/Scam_Warming_App/releases/download/M%C3%B4_h%C3%ACnh_Gemma/gemma-2b-it-cpu-int4.bin",
         "https://storage.googleapis.com/mediapipe-models/llm_inference/gemma_2b_it_cpu_int4.bin",
-        "https://storage.googleapis.com/mediapipe-assets/gemma_2b_it_cpu_int4.bin",
-        "https://huggingface.co/google/gemma-1.1-2b-it-tflite/resolve/main/gemma-1.1-2b-it-cpu-int4.bin"
+        "https://storage.googleapis.com/mediapipe-assets/gemma_2b_it_cpu_int4.bin"
     )
 
     fun downloadModel(urlIndex: Int = 0): Flow<DownloadStatus> = flow {
         if (urlIndex >= MODEL_URLS.size) {
-            emit(DownloadStatus.Error("Không tìm thấy link tải tự động khả dụng. Vui lòng thử lại sau hoặc chọn file thủ công."))
+            emit(DownloadStatus.Error("Không tìm thấy link tải tự động khả dụng. Vui lòng thử lại hoặc chọn file thủ công."))
             return@flow
         }
 
@@ -40,8 +40,8 @@ class ModelDownloadManager @Inject constructor(
 
         val request = try {
             DownloadManager.Request(Uri.parse(currentUrl))
-                .setTitle("Đang tự động kích hoạt AI")
-                .setDescription("Tải dữ liệu thông minh (1.3GB)...")
+                .setTitle("Đang kích hoạt AI")
+                .setDescription("Tải dữ liệu từ GitHub (1.3GB)...")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
                 .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "gemma-2b-it-cpu-int4.bin")
                 .setAllowedOverMetered(true) 
@@ -85,8 +85,8 @@ class ModelDownloadManager @Inject constructor(
                         }
                         DownloadManager.STATUS_FAILED -> {
                             isDownloading = false
+                            // Nếu link GitHub lỗi, tự động thử link dự phòng của Google
                             if (reason == 404 || reason == 401 || reason == 403) {
-                                Log.w("DownloadAI", "Link $urlIndex lỗi $reason, thử link dự phòng...")
                                 downloadModel(urlIndex + 1).collect { emit(it) }
                                 return@flow
                             }
