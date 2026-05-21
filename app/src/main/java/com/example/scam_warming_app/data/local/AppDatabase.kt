@@ -21,7 +21,7 @@ import com.example.scam_warming_app.data.local.entity.TrustedNumberEntity
         TrustedNumberEntity::class,
         AiLogEntity::class
     ],
-    version = 5,
+    version = 6, // NÂNG CẤP LÊN 6 ĐỂ FIX LỖI CRASH
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

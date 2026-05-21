@@ -4,11 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -28,7 +29,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
-// Import Screens
+import com.example.scam_warming_app.data.local.SessionManager
+import com.example.scam_warming_app.data.remote.ApiService
+import com.example.scam_warming_app.data.remote.RegisterRequest
 import com.example.scam_warming_app.presentation.blacklist.BlacklistScreen
 import com.example.scam_warming_app.presentation.blacklist.BlacklistViewModel
 import com.example.scam_warming_app.presentation.detail.DetailScreen
@@ -40,7 +43,6 @@ import com.example.scam_warming_app.presentation.home.HomeViewModel
 import com.example.scam_warming_app.presentation.onboarding.OnboardingScreen
 import com.example.scam_warming_app.presentation.onboarding.OnboardingViewModel
 import com.example.scam_warming_app.presentation.permission.PermissionScreen
-import com.example.scam_warming_app.presentation.permission.PermissionViewModel
 import com.example.scam_warming_app.presentation.report.ReportScreen
 import com.example.scam_warming_app.presentation.report.ReportViewModel
 import com.example.scam_warming_app.presentation.settings.SettingsScreen
@@ -52,7 +54,10 @@ import com.example.scam_warming_app.presentation.trusted.TrustedNumbersViewModel
 
 import com.example.scam_warming_app.service.CallDetectionService
 import com.example.scam_warming_app.ui.theme.ScamwarmingappTheme
+import com.example.scam_warming_app.utils.PermissionManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     data object Home : Screen("home", "Trang chủ", Icons.Rounded.Shield)
@@ -63,16 +68,32 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var sessionManager: SessionManager
+
+    @Inject
+    lateinit var apiService: ApiService
+
+    private lateinit var permissionManager: PermissionManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        permissionManager = PermissionManager(this)
+
         enableEdgeToEdge()
         setContent {
             ScamwarmingappTheme {
+                // Ban đầu luôn vào Splash
                 var currentViewState by remember { mutableStateOf("splash") }
 
                 when (currentViewState) {
                     "splash" -> SplashScreen(
-                        onNext = { currentViewState = "onboarding" },
+                        onNext = { destination -> 
+                            // Nhận điểm đến tiếp theo từ Splash (onboarding/permission/main)
+                            currentViewState = destination 
+                        },
                         viewModel = hiltViewModel<SplashViewModel>()
                     )
                     "onboarding" -> OnboardingScreen(
@@ -80,13 +101,41 @@ class MainActivity : ComponentActivity() {
                         viewModel = hiltViewModel<OnboardingViewModel>()
                     )
                     "permission" -> PermissionScreen(
+                        permissionManager = permissionManager,
                         onAllGranted = { 
-                            startServices(this)
-                            currentViewState = "main" 
+                            handleRegistrationAndStart {
+                                currentViewState = "main"
+                            }
                         }
                     )
                     "main" -> MainAppContainer()
                 }
+            }
+        }
+    }
+
+    private fun handleRegistrationAndStart(onComplete: () -> Unit) {
+        val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown"
+        
+        lifecycleScope.launch {
+            try {
+                val response = apiService.register(
+                    RegisterRequest(
+                        phone_number = "USER_PHONE", 
+                        device_id = deviceId,
+                        device_model = Build.MODEL,
+                        os_version = "Android ${Build.VERSION.RELEASE}"
+                    )
+                )
+                
+                if (response.success && response.access_token != null) {
+                    sessionManager.saveAuthToken(response.access_token)
+                }
+            } catch (e: Exception) {
+                Log.e("JWT", "Error: ${e.message}")
+            } finally {
+                startServices(this@MainActivity)
+                onComplete()
             }
         }
     }

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.provider.Telephony
 import android.util.Log
 import com.example.scam_warming_app.domain.usecase.AnalyzeSmsUseCase
+import com.example.scam_warming_app.utils.ContactHelper
 import com.example.scam_warming_app.utils.NotificationHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,9 @@ class SmsReceiver : BroadcastReceiver() {
     @Inject
     lateinit var analyzeSmsUseCase: AnalyzeSmsUseCase
 
+    @Inject
+    lateinit var contactHelper: ContactHelper
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -32,6 +36,12 @@ class SmsReceiver : BroadcastReceiver() {
                 val body = message.displayMessageBody ?: ""
                 
                 Log.d("SmsReceiver", "Processing SMS from $sender")
+
+                // BƯỚC 1: Kiểm tra danh bạ để loại trừ người quen
+                if (contactHelper.isContactSaved(sender)) {
+                    Log.d("SmsReceiver", "Số người quen ($sender). Bỏ qua phân tích.")
+                    continue
+                }
 
                 scope.launch {
                     try {

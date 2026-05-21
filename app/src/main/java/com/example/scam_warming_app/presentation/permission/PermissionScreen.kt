@@ -1,9 +1,5 @@
 package com.example.scam_warming_app.presentation.permission
 
-import android.Manifest
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,39 +14,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
+import com.example.scam_warming_app.utils.PermissionManager
 
 @Composable
 fun PermissionScreen(
+    permissionManager: PermissionManager,
     onAllGranted: () -> Unit
 ) {
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val permissions = mutableListOf(
-        Manifest.permission.RECEIVE_SMS,
-        Manifest.permission.READ_SMS,
-        Manifest.permission.READ_PHONE_STATE,
-        Manifest.permission.READ_CALL_LOG,
-        Manifest.permission.READ_CONTACTS,
-        Manifest.permission.RECORD_AUDIO
-    ).apply {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
-        if (result.values.all { it }) {
+    // 1. Tự động kiểm tra và chuyển hướng nếu đã đủ quyền
+    LaunchedEffect(Unit) {
+        if (permissionManager.hasAllPermissions()) {
             onAllGranted()
+        }
+
+        permissionManager.setOnResultListener { allGranted ->
+            if (allGranted) {
+                onAllGranted()
+            }
         }
     }
 
@@ -119,7 +105,9 @@ fun PermissionScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { launcher.launch(permissions.toTypedArray()) },
+            onClick = { 
+                permissionManager.requestPermissions() 
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

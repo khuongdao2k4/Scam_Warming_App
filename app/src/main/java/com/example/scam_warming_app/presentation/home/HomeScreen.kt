@@ -1,10 +1,9 @@
 package com.example.scam_warming_app.presentation.home
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -49,13 +47,16 @@ fun HomeScreen(
     val isAiReady by viewModel.isAiReady.collectAsState()
     val downloadStatus by viewModel.downloadStatus.collectAsState()
 
-    // Launcher để chọn file thủ công (Dự phòng trường hợp tải tự động thất bại)
-    val filePickerLauncher = rememberLauncherForActivityResult(
+    val filePickerLauncher = rememberLauncherForActivityResult<String, Uri?>(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            context.contentResolver.openInputStream(it)?.let { inputStream ->
-                viewModel.installManualModel(inputStream)
+            try {
+                context.contentResolver.openInputStream(it)?.use { inputStream ->
+                    viewModel.installManualModel(inputStream)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Lỗi nạp file: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -72,7 +73,7 @@ fun HomeScreen(
             }
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
@@ -83,19 +84,24 @@ fun HomeScreen(
                     )
                 ))
         ) {
-            HeaderSection()
+            item { HeaderSection(onTestClick = { viewModel.simulateScamSms() }) }
             
-            AiStatusCard(
-                isReady = isAiReady,
-                status = downloadStatus,
-                onDownloadClick = { viewModel.startModelDownload() },
-                onPickFileClick = { filePickerLauncher.launch("*/*") }
-            )
+            item { 
+                AiStatusCard(
+                    isReady = isAiReady,
+                    status = downloadStatus,
+                    onDownloadClick = { viewModel.startModelDownload() },
+                    onPickFileClick = { filePickerLauncher.launch("*/*") }
+                )
+            }
 
-            StatsSection(stats.blockedSms, stats.analyzedCalls, dbCount)
+            item { StatsSection(stats.blockedSms, stats.analyzedCalls, dbCount) }
             
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            item {
+                Row(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         "Nhật ký bảo vệ", 
                         style = MaterialTheme.typography.titleLarge, 
@@ -106,47 +112,85 @@ fun HomeScreen(
                         Text("Xóa hết", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    item { SectionTitle("Tin nhắn gần đây", Icons.Rounded.Sms) }
-                    if (smsHistory.isEmpty()) {
-                        item { EmptyCard("Chưa phát hiện tin nhắn độc hại") }
-                    } else {
-                        items(smsHistory) { sms ->
-                            SmsHistoryItem(sms, onClick = { onNavigateToDetail(sms.id, "sms") })
-                        }
-                    }
+            }
 
-                    item { Spacer(modifier = Modifier.height(24.dp)) }
-                    
-                    item { SectionTitle("Cuộc gọi số lạ", Icons.AutoMirrored.Rounded.PhoneCallback) }
-                    if (callHistory.isEmpty()) {
-                        item { EmptyCard("Hệ thống chưa ghi nhận cuộc gọi lạ") }
-                    } else {
-                        items(callHistory) { call ->
-                            CallHistoryItem(call, onClick = { onNavigateToDetail(call.id, "call") })
-                        }
+            item { 
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    SectionTitle("Tin nhắn gần đây", Icons.Rounded.Sms) 
+                }
+            }
+            
+            if (smsHistory.isEmpty()) {
+                item { 
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        EmptyCard("Chưa phát hiện tin nhắn độc hại") 
                     }
                 }
+            } else {
+                items(smsHistory) { sms ->
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        SmsHistoryItem(sms, onClick = { onNavigateToDetail(sms.id, "sms") })
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+
+            item { 
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    SectionTitle("Cuộc gọi số lạ", Icons.AutoMirrored.Rounded.PhoneCallback) 
+                }
+            }
+            
+            if (callHistory.isEmpty()) {
+                item { 
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        EmptyCard("Hệ thống chưa ghi nhận cuộc gọi lạ") 
+                    }
+                }
+            } else {
+                items(callHistory) { call ->
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        CallHistoryItem(call, onClick = { onNavigateToDetail(call.id, "call") })
+                    }
+                }
+            }
+            
+            // Quan trọng: Thêm padding dưới cùng để không bị BottomBar che mất nội dung cuối
+            item { Spacer(modifier = Modifier.height(100.dp)) }
+        }
+    }
+}
+
+@Composable
+fun HeaderSection(onTestClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF004D40)),
+        shape = RoundedCornerShape(32.dp)
+    ) {
+        Row(modifier = Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(56.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.15f)).clickable { onTestClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = Icons.Rounded.Shield, contentDescription = null, tint = Color.White)
+            }
+            Spacer(modifier = Modifier.width(20.dp))
+            Column {
+                Text("Lá chắn đang chạy", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
+                Text("Chạm vào khiên để Test FastAPI", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
             }
         }
     }
 }
 
 @Composable
-fun AiStatusCard(
-    isReady: Boolean, 
-    status: DownloadStatus, 
-    onDownloadClick: () -> Unit,
-    onPickFileClick: () -> Unit
-) {
+fun AiStatusCard(isReady: Boolean, status: DownloadStatus, onDownloadClick: () -> Unit, onPickFileClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isReady) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = if (isReady) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -156,28 +200,21 @@ fun AiStatusCard(
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (isReady) "Trí tuệ nhân tạo: Sẵn sàng" else "Chưa kích hoạt AI nâng cao",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
+                Text(text = if (isReady) "Trí tuệ nhân tạo: Sẵn sàng" else "Kích hoạt AI nâng cao", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 if (!isReady) {
                     when (status) {
                         is DownloadStatus.Downloading -> {
                             val progress = if (status.progress >= 0) status.progress / 100f else null
                             if (progress != null) {
-                                LinearProgressIndicator(
-                                    progress = { progress },
-                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-                                )
-                                Text("Đang tải/nạp AI: ${status.progress}%", fontSize = 11.sp, color = Color.Gray)
+                                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+                                Text("Đang nạp AI: ${status.progress}%", fontSize = 11.sp, color = Color.Gray)
                             } else {
                                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
-                                Text("Đang kết nối GitHub/Google...", fontSize = 11.sp, color = Color.Gray)
+                                Text("Đang kết nối lại...", fontSize = 11.sp, color = Color.Gray)
                             }
                         }
                         is DownloadStatus.Error -> Text(status.message, fontSize = 11.sp, color = Color.Red)
-                        else -> Text("Đang khởi động tiến trình tải...", fontSize = 11.sp, color = Color.Gray)
+                        else -> Text("Đang khởi động trình tải...", fontSize = 11.sp, color = Color.Gray)
                     }
                 }
             }
@@ -212,42 +249,8 @@ fun StatCard(label: String, value: String, icon: ImageVector, modifier: Modifier
 }
 
 @Composable
-fun HeaderSection() {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f, targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(animation = tween(1500), repeatMode = RepeatMode.Reverse),
-        label = "scale"
-    )
-
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF004D40)),
-        shape = RoundedCornerShape(32.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-    ) {
-        Row(modifier = Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(56.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Shield, contentDescription = null,
-                    tint = Color.White, modifier = Modifier.size(28.dp).graphicsLayer(scaleX = scale, scaleY = scale)
-                )
-            }
-            Spacer(modifier = Modifier.width(20.dp))
-            Column {
-                Text("Lá chắn đang chạy", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
-                Text("AI đang giám sát thời gian thực", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
-            }
-        }
-    }
-}
-
-@Composable
 fun SectionTitle(title: String, icon: ImageVector) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
         Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.width(8.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -263,7 +266,7 @@ fun EmptyCard(text: String) {
 
 @Composable
 fun SmsHistoryItem(sms: SmsEntity, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = if (sms.isScam) Color(0xFFFFF1F0) else Color.White), shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(2.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = if (sms.isScam) Color(0xFFFFF1F0) else Color.White), shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(2.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(if (sms.isScam) Color.Red else Color(0xFF4CAF50)))
@@ -280,7 +283,7 @@ fun SmsHistoryItem(sms: SmsEntity, onClick: () -> Unit) {
 
 @Composable
 fun CallHistoryItem(call: CallEntity, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = if (call.isScam) Color(0xFFFFF1F0) else Color.White), shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(2.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = if (call.isScam) Color(0xFFFFF1F0) else Color.White), shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(2.dp)) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(if (call.isScam) Color.Red.copy(alpha = 0.1f) else Color(0xFFE8F5E9)), contentAlignment = Alignment.Center) {
                 Icon(imageVector = if (call.isScam) Icons.Rounded.ReportProblem else Icons.Rounded.VerifiedUser, contentDescription = null, tint = if (call.isScam) Color.Red else Color(0xFF43A047), modifier = Modifier.size(24.dp))

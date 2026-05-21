@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import com.example.scam_warming_app.data.local.SessionManager
 import com.example.scam_warming_app.data.remote.ApiService
+import com.example.scam_warming_app.data.remote.AuthResponse
 import com.example.scam_warming_app.data.remote.RegisterRequest
 import com.example.scam_warming_app.domain.repository.IUserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -17,7 +18,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun registerDevice(phoneNumber: String, deviceId: String): Result<Unit> {
         return try {
-            val response = apiService.register(
+            val response: AuthResponse = apiService.register(
                 RegisterRequest(
                     phone_number = phoneNumber,
                     device_id = deviceId,
@@ -27,7 +28,12 @@ class UserRepositoryImpl @Inject constructor(
             )
             if (response.success && response.access_token != null) {
                 sessionManager.saveAuthToken(response.access_token)
-                response.refresh_token?.let { sessionManager.saveRefreshToken(it) }
+                
+                val refreshToken: String? = response.refresh_token
+                if (refreshToken != null) {
+                    sessionManager.saveRefreshToken(refreshToken)
+                }
+
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Đăng ký thiết bị thất bại"))

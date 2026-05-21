@@ -49,8 +49,8 @@ fun SettingsScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState()) // Đảm bảo toàn bộ trang có thể cuộn
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
             Text(
                 "Trạng thái giám sát",
@@ -156,6 +156,9 @@ fun SettingsScreen(
                     }
                 }
             )
+            
+            // QUAN TRỌNG: Thêm khoảng trống cuối để không bị che bởi NavigationBar
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }

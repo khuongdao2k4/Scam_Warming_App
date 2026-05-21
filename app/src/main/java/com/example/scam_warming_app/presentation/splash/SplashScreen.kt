@@ -21,14 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onNext: () -> Unit,
+    onNext: (String) -> Unit, // Nhận điểm đến tiếp theo
     viewModel: SplashViewModel = hiltViewModel()
 ) {
     val isReady by viewModel.isReady.collectAsState()
+    val nextDestination by viewModel.nextDestination.collectAsState()
     var startAnimation by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -37,7 +37,7 @@ fun SplashScreen(
 
     LaunchedEffect(isReady) {
         if (isReady) {
-            onNext()
+            onNext(nextDestination)
         }
     }
 
@@ -89,7 +89,6 @@ fun SplashScreen(
             )
         }
 
-        // Chân trang
         Text(
             text = "Bảo vệ bạn 24/7 bởi Trí tuệ nhân tạo",
             color = Color.White.copy(alpha = 0.5f),

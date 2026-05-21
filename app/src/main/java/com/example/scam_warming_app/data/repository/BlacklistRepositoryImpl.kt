@@ -23,7 +23,8 @@ class BlacklistRepositoryImpl @Inject constructor(
                 BlacklistEntity(
                     phoneNumber = dto.phone_number,
                     category = dto.category,
-                    riskLevel = dto.risk_level
+                    riskLevel = dto.risk_level,
+                    reportedCount = dto.report_count ?: 1 // Cập nhật số lần báo cáo từ Server
                 )
             }
             blacklistDao.clearAll()

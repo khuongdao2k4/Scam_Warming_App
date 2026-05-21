@@ -1,14 +1,14 @@
 package com.example.scam_warming_app.presentation.onboarding
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.GppGood
@@ -19,7 +19,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -64,7 +63,7 @@ fun OnboardingScreen(
     )
 
     val pagerState = rememberPagerState(pageCount = { pages.size })
-    val scope = rememberCoroutineOf()
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -114,7 +113,7 @@ fun OnboardingScreen(
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         }
                     } else {
-                        viewModel.completeOnboarding()
+                        viewModel.completeOnboarding() // Lưu trạng thái đã hoàn thành
                         onFinished()
                     }
                 },
@@ -139,13 +138,15 @@ fun OnboardingPagerItem(page: OnboardingPage) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            // SỬA LỖI: Thêm verticalScroll để không bị cắt nội dung trên màn hình nhỏ
+            .verticalScroll(rememberScrollState())
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
-                .size(200.dp)
+                .size(180.dp)
                 .clip(CircleShape)
                 .background(page.color.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
@@ -153,12 +154,12 @@ fun OnboardingPagerItem(page: OnboardingPage) {
             Icon(
                 imageVector = page.icon,
                 contentDescription = null,
-                modifier = Modifier.size(100.dp),
+                modifier = Modifier.size(90.dp),
                 tint = page.color
             )
         }
         
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(40.dp))
         
         Text(
             text = page.title,
@@ -177,8 +178,8 @@ fun OnboardingPagerItem(page: OnboardingPage) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 24.sp
         )
+        
+        // Thêm khoảng trống cuối để đảm bảo cuộn được hết chữ
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
-
-@Composable
-fun rememberCoroutineOf() = rememberCoroutineScope()

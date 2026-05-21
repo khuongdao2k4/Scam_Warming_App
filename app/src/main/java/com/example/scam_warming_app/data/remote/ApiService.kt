@@ -22,7 +22,7 @@ interface ApiService {
     @POST("report")
     suspend fun submitReport(@Body request: ReportRequest): ReportResponse
 
-    // Xác thực (Theo Section 14 của API Spec)
+    // Xác thực
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): AuthResponse
 
@@ -32,7 +32,7 @@ interface ApiService {
     @POST("auth/refresh")
     suspend fun refreshToken(@Body request: RefreshRequest): AuthResponse
 
-    // AI Logging (Theo Section 7.1 của API Spec)
+    // AI Logging
     @POST("ai/log")
     suspend fun logAiResult(@Body request: AiLogRequest): Unit
 }
@@ -105,7 +105,8 @@ data class BlacklistResponse(
 data class BlacklistDto(
     val phone_number: String,
     val category: String,
-    val risk_level: Int
+    val risk_level: Int,
+    val report_count: Int? = 0 // Thêm trường này
 )
 
 data class KeywordsResponse(

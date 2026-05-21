@@ -31,9 +31,6 @@ class CallDetectionService : Service() {
     @Inject
     lateinit var sttService: SpeechToTextService
 
-    @Inject
-    lateinit var contactHelper: ContactHelper
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var telephonyManager: TelephonyManager
     private var callStateListener: PhoneStateListener? = null
@@ -48,12 +45,12 @@ class CallDetectionService : Service() {
         super.onCreate()
         createNotificationChannel()
         
-        // Android 14+ yêu cầu khai báo loại dịch vụ ngay khi startForeground
+        // CẬP NHẬT CHO ANDROID 14+: Khai báo cả Microphone và Special Use
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID, 
                 createNotification(), 
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
             )
         } else {
             startForeground(NOTIFICATION_ID, createNotification())

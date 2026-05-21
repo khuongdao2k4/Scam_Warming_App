@@ -6,6 +6,8 @@ import com.example.scam_warming_app.ai.GemmaAiEngine
 import com.example.scam_warming_app.data.local.dao.BlacklistDao
 import com.example.scam_warming_app.data.local.entity.CallEntity
 import com.example.scam_warming_app.data.local.entity.SmsEntity
+import com.example.scam_warming_app.domain.repository.IBlacklistRepository
+import com.example.scam_warming_app.domain.usecase.AnalyzeSmsUseCase
 import com.example.scam_warming_app.domain.usecase.DeleteHistoryUseCase
 import com.example.scam_warming_app.domain.usecase.GetCallHistoryUseCase
 import com.example.scam_warming_app.domain.usecase.GetSmsHistoryUseCase
@@ -21,8 +23,10 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getSmsHistoryUseCase: GetSmsHistoryUseCase,
     private val getCallHistoryUseCase: GetCallHistoryUseCase,
+    private val analyzeSmsUseCase: AnalyzeSmsUseCase, // Thêm UseCase để test
     private val deleteHistoryUseCase: DeleteHistoryUseCase,
     private val blacklistDao: BlacklistDao,
+    private val blacklistRepository: IBlacklistRepository,
     private val gemmaAiEngine: GemmaAiEngine,
     private val downloadManager: ModelDownloadManager
 ) : ViewModel() {
@@ -48,8 +52,15 @@ class HomeViewModel @Inject constructor(
 
     init {
         updateBlacklistCount()
-        // TỰ ĐỘNG KIỂM TRA VÀ TẢI NGAY KHI MỞ APP
         autoStartDownloadIfMissing()
+        syncDataFromServer()
+    }
+
+    private fun syncDataFromServer() {
+        viewModelScope.launch {
+            blacklistRepository.syncBlacklist()
+            updateBlacklistCount()
+        }
     }
 
     private fun autoStartDownloadIfMissing() {
@@ -66,6 +77,13 @@ class HomeViewModel @Inject constructor(
                     _isAiReady.value = true
                 }
             }
+        }
+    }
+
+    fun simulateScamSms() {
+        viewModelScope.launch {
+            // Giả lập một tin nhắn chứa từ khóa "nợ" để test FastAPI
+            analyzeSmsUseCase("0912345678", "Bạn đang có một khoản nợ ngân hàng chưa thanh toán!")
         }
     }
 

@@ -1,6 +1,5 @@
 package com.example.scam_warming_app.presentation.report
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -46,10 +45,7 @@ fun ReportScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Quay lại")
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                }
             )
         }
     ) { padding ->
@@ -57,10 +53,9 @@ fun ReportScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            // Lưu ý bảo mật
             Surface(
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(16.dp),
@@ -127,7 +122,7 @@ fun ReportScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = { 
@@ -145,6 +140,9 @@ fun ReportScreen(
                     Text("Gửi báo cáo ngay", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
+            
+            // QUAN TRỌNG: Thêm khoảng trống cuối
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }

@@ -12,5 +12,6 @@ data class SmsEntity(
     val riskScore: Int,
     val isScam: Boolean,
     val category: String?,
-    val reasons: String // Store as JSON string or comma-separated
+    val reasons: String, // Store as JSON string or comma-separated
+    val isOffline: Boolean = false // THÊM TRƯỜNG NÀY ĐỂ BIẾT DÙNG AI NÀO
 )

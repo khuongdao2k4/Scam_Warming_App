@@ -60,7 +60,7 @@ fun HistoryScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            // Filter Chip
+            // Filter Chip cố định ở trên
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -85,7 +85,8 @@ fun HistoryScreen(
                     Text("Không có dữ liệu lịch sử", color = Color.Gray)
                 }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                // Sử dụng weight(1f) để LazyColumn chiếm phần còn lại và có thể cuộn
+                LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp)) {
                     items(filteredItems) { item ->
                         HistoryRow(
                             item = item,
@@ -96,6 +97,8 @@ fun HistoryScreen(
                         )
                         HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
                     }
+                    // Thêm khoảng trống cuối danh sách
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
         }

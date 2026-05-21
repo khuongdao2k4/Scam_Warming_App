@@ -56,7 +56,8 @@ fun TrustedNumbersScreen(
                     Text("Chưa có số tin cậy nào", color = Color.Gray)
                 }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                // SỬA LỖI: Thêm Modifier.weight(1f) để LazyColumn có thể cuộn trong Column
+                LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp)) {
                     items(trustedNumbers) { number ->
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -77,6 +78,8 @@ fun TrustedNumbersScreen(
                             )
                         }
                     }
+                    // Thêm khoảng trống cuối để tránh bị che
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
         }

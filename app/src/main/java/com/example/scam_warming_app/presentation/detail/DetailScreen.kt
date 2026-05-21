@@ -72,10 +72,10 @@ fun DetailScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            // Header Card with Risk Level
+            // Header Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -118,7 +118,6 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Information Section
             InfoRow(label = "Đối tượng:", value = sender ?: "Không rõ", icon = Icons.Rounded.Person)
             InfoRow(
                 label = "Thời gian:", 
@@ -129,7 +128,6 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Content Section
             Text(
                 text = if (type == "sms") "Nội dung tin nhắn:" else "Nội dung cuộc gọi (Transcript):",
                 style = MaterialTheme.typography.titleMedium,
@@ -149,10 +147,8 @@ fun DetailScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // AI Reasons Section
             if (isScam) {
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = "Lý do AI cảnh báo:",
                     style = MaterialTheme.typography.titleMedium,
@@ -169,11 +165,9 @@ fun DetailScreen(
                         Text(text = reason, style = MaterialTheme.typography.bodySmall)
                     }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            if (isScam) {
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
                 Button(
                     onClick = { 
                         sender?.let { phone ->
@@ -201,6 +195,9 @@ fun DetailScreen(
                     }
                 }
             }
+            
+            // QUAN TRỌNG: Thêm Spacer ở cuối để nội dung không bị che
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }

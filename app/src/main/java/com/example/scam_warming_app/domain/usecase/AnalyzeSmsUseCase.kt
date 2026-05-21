@@ -19,7 +19,8 @@ class AnalyzeSmsUseCase @Inject constructor(
             riskScore = result.riskScore,
             isScam = result.isScam,
             category = result.category,
-            reasons = result.reasons.joinToString(", ")
+            reasons = result.reasons.joinToString(", "),
+            isOffline = result.isOfflineMode // Lưu lại nguồn AI
         )
         smsRepository.saveSms(entity)
         
